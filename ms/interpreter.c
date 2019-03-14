@@ -32,7 +32,7 @@ void *Interpreter_malloc(int size)
 char *Interpreter_str_malloc(char *str)
 {
     Interpreter *interpreter = getInterpreterInstance();
-    void *p = MEM_malloc(strlen(str) + 1);
+    void *p = MEM_storage_malloc(interpreter->storage, strlen(str) + 1);
     strcpy(p, str);
     return p;
 }
@@ -70,7 +70,7 @@ void printPrimaryExpression(PrimaryExpression *expression)
         printf("%d\n", expression->u.i);
         break;
     case STRING_TYPE:
-        printf("str:%s\n", expression->u.str);
+        printf("str:%s\n", expression->u.mstring->str);
         break;
     case IDENTIFIER_TYPE:
         printf("id:%s\n", expression->u.identifier);

@@ -1,4 +1,7 @@
-i=1.2+1.3;
-for(;i<1000;)
-{
-}
+j="haha";
+j=j+1;#haha1:1
+#j=j+1;#haha1 2 haha1 1 haha1 0
+j = j+1;
+k=j;
+k="";
+j="";

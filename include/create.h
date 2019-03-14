@@ -1,6 +1,8 @@
 #ifndef __CREATE_H__
 #define __CREATE_H__
 
+#include "../include/string_pool.h"
+
 typedef struct PrimaryExpression_tag PrimaryExpression;
 typedef struct Binary_Expression_tag Binary_Expression;
 typedef struct Expression_tag Expression;
@@ -62,7 +64,8 @@ struct PrimaryExpression_tag
     union {
         int i;
         double d;
-        char *str;
+        // char *str;
+        MString*mstring;
         char *identifier;
     } u;
 };

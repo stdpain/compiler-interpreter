@@ -8,7 +8,9 @@ OBJS = \
   create.o\
   interpreter.o\
   ../memory/mem.o\
-  eval.o
+  eval.o\
+  string_pool.o
+
 CFLAGS = -c -g -Wall -Wswitch-enum  -pedantic -DDEBUG
 INCLUDES = \
 	-I../include
@@ -27,6 +29,8 @@ y.tab.c : ms.y
 lex.yy.c : ms.l ms.y y.tab.h
 	flex ms.l
 y.tab.o: y.tab.c ../include/create.h ../include/MEM.h
+	$(CC) -c -g $*.c $(INCLUDES)
+string_pool.o: y.tab.c ../include/string_pool.h ../include/MEM.h ../include/interpreter.h string_pool.c
 	$(CC) -c -g $*.c $(INCLUDES)
 lex.yy.o: lex.yy.c ../include/create.h ../include/MEM.h
 	$(CC) -c -g $*.c $(INCLUDES)

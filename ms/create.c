@@ -18,7 +18,8 @@ PrimaryExpression *createStr_ID(char *p, int type)
     if (type == 0)
     {
         exp->type = STRING_TYPE;
-        exp->u.str = p;
+        // exp->u.str = p;
+        exp->u.mstring = allocMString(p, 1);
     }
     else
     {
@@ -261,7 +262,7 @@ void addc_charbuffer(char c)
 char *flush_charbuffer()
 {
     char *p = buffer;
-    buffer[pos]=0;
+    buffer[pos] = 0;
     buffer = NULL;
     return p;
 }

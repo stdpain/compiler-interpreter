@@ -3,6 +3,17 @@
 #include "../include/eval.h"
 #include <string.h>
 
+void Release_IfMString(Value *v)
+{
+    if (v->type == ValueType_String)
+        MStringRelease(v->u.mstring);
+}
+void Retain_IfMString(Value *v)
+{
+    if (v->type == ValueType_String)
+        MStringRetain(v->u.mstring);
+}
+
 void alloc_Environment(Environment *env)
 {
     env->storage = MEM_open_storage(0);
@@ -14,6 +25,14 @@ void disposite_Environment(Environment *env)
     MEM_dispose_storage(env->storage);
     env->list = NULL;
     env->outervar = NULL;
+}
+void clearParams(Environment *env)
+{
+    Variable_list *pos;
+    for (pos = env->list; pos; pos = pos->next)
+    {
+        Release_IfMString(&(pos->variable->v));
+    }
 }
 void Environment_Varlist_add(Environment *env, Variable *variable)
 {
@@ -105,6 +124,7 @@ void ParamListAssign(Interpreter *inter, Environment *outerEnv,
         Variable *variable = eval_getVariable(inter, outerEnv, outer_pos->identifier);
         Variable *realVariable = allocVariable(innerEnv, variable->identifier);
         realVariable->v = variable->v;
+        Retain_IfMString(&(realVariable->v));
         outer_pos = outer_pos->next;
         inner_pos = inner_pos->next;
     }
@@ -128,21 +148,22 @@ Value execute_Expression_Primary(Interpreter *inter,
         break;
     case STRING_TYPE:
         v.type = ValueType_String;
-        v.u.str = primaryExpression->u.str;
+        v.u.mstring = primaryExpression->u.mstring;
         break;
     case IDENTIFIER_TYPE:
     {
-        Variable *variable = eval_getVariable(inter, local, primaryExpression->u.str);
+        Variable *variable = eval_getVariable(inter, local, primaryExpression->u.identifier);
         if (variable)
         {
             v.type = variable->v.type;
             v.u = variable->v.u;
+            Retain_IfMString(&v);
         }
         else
         {
             v.type = ValueType_INVALID;
             //
-            printf("can not find var %s\n", primaryExpression->u.str);
+            printf("can not find var %s\n", primaryExpression->u.mstring->str);
             printf("need code int line:%d\n", __LINE__);
         }
     }
@@ -174,21 +195,21 @@ char *value_str_cat(Value *l, Value *r)
     if (l->type == ValueType_Integer)
     {
         sprintf(buffer, "%d", l->u.i);
-        strcat(buffer, r->u.str);
+        strcat(buffer, r->u.mstring->str);
     }
     else if (l->type == ValueType_Double)
     {
         sprintf(buffer, "%f", l->u.d);
-        strcat(buffer, r->u.str);
+        strcat(buffer, r->u.mstring->str);
     }
     else if (l->type == ValueType_INVALID)
     {
         sprintf(buffer, "[invalid]");
-        strcat(buffer, r->u.str);
+        strcat(buffer, r->u.mstring->str);
     }
     else if (l->type == ValueType_String)
     {
-        sprintf(buffer, "%s", l->u.str);
+        sprintf(buffer, "%s", l->u.mstring->str);
         pbuffer = buffer + strlen(buffer);
         if (r->type == ValueType_Integer)
         {
@@ -200,11 +221,11 @@ char *value_str_cat(Value *l, Value *r)
         }
         else if (r->type == ValueType_INVALID)
         {
-            sprintf(pbuffer, "[INVALID]", r->u.i);
+            sprintf(pbuffer, "[INVALID]");
         }
         else if (r->type == ValueType_String)
         {
-            sprintf(pbuffer, "%s", r->u.str);
+            sprintf(pbuffer, "%s", r->u.mstring->str);
         }
         else
         {
@@ -215,7 +236,10 @@ char *value_str_cat(Value *l, Value *r)
     {
         //error
     }
-    void *p = Interpreter_str_malloc(buffer);
+    // void *p = Interpreter_str_malloc(buffer);
+    int len = strlen(buffer);
+    void *p = MEM_malloc(len + 1);
+    memcpy(p, buffer, len + 1);
     return p;
 }
 Value value_add_option(Value *l, Value *r)
@@ -441,7 +465,7 @@ Value value_eq_option(Value *l, Value *r)
         }
         if (l->type == ValueType_String)
         {
-            v.u.i = (!strcmp(l->u.str, r->u.str));
+            v.u.i = (!strcmp(l->u.mstring->str, r->u.mstring->str));
             return v;
         }
         if (l->type == ValueType_Native)
@@ -480,7 +504,9 @@ Value execute_BinaryExpression(Interpreter *inter, Environment *env, Expression 
         {
             char *p = value_str_cat(&l, &r);
             v.type = ValueType_String;
-            v.u.str = p;
+            v.u.mstring = allocMString(p, 0);
+            Release_IfMString(&l);
+            Release_IfMString(&r);
         }
     }
     break;
@@ -583,10 +609,14 @@ Value execute_BinaryExpression(Interpreter *inter, Environment *env, Expression 
     case EQ_OPERATOR:
     {
         v = value_eq_option(&l, &r);
+        Release_IfMString(&l);
+        Release_IfMString(&r);
     }
     break;
     case NE_OPERATOR:
         v = value_ne_option(&l, &r);
+        Release_IfMString(&l);
+        Release_IfMString(&r);
         break;
     default:
         break;
@@ -600,7 +630,10 @@ Value execute_AssignExpresion(Interpreter *inter,
     Value v;
     v = execute_Expression(inter, local, expression->u.a->expression);
     Variable *variable = Variable_FindorCreate(inter, local, expression->u.a->identifier);
+    printf("will release left\n");
+    Release_IfMString(&(variable->v));
     variable->v = v;
+    Retain_IfMString(&(variable->v));
     // printf("assign var:%s v:%s type:%d\n", variable->identifier, variable->v.u.str, variable->v.type);
     return v;
 }
@@ -653,6 +686,7 @@ Value execute_FuctionExpression(Interpreter *inter, Environment *local, Expressi
     {
         execute_StatementList(inter, &funcEnvironment, funct->list);
     }
+    clearParams(&funcEnvironment);
     disposite_Environment(&funcEnvironment);
     return v;
 }
@@ -688,6 +722,7 @@ execute_ExpressionStatement(Interpreter *inter, Environment *local, Statement *s
 {
     StatementResult result;
     result.v = execute_Expression(inter, local, statement->u.e->expression);
+    Release_IfMString(&result.v);
     result.result = StatementResultType_Normal;
     return result;
 }
@@ -698,7 +733,7 @@ execute_ForStatement(Interpreter *inter, Environment *local, Statement *statemen
     StatementResult result;
     result.result = StatementResultType_Normal;
     For_Statement *forstatement = statement->u.f;
-    // if (forstatement->before)
+    if (forstatement->before)
         execute_Expression(inter, local, forstatement->before);
     while (1)
     {
@@ -711,7 +746,7 @@ execute_ForStatement(Interpreter *inter, Environment *local, Statement *statemen
             if (v.type == INVALID_TYPE)
                 break;
         }
-        printf("stp:%p\n",forstatement->statementlist);
+        // printf("stp:%p\n", forstatement->statementlist);
         StatementResult exeresult = execute_StatementList(inter, local, forstatement->statementlist);
         if (exeresult.result == StatementResultType_Break)
             break;
@@ -805,16 +840,16 @@ void mprint(Value *v)
         printf("%f", v->u.d);
         break;
     case ValueType_String:
-        printf("%s", v->u.str);
+        printf("%s", v->u.mstring->str);
         break;
     case ValueType_INVALID:
-        printf("[INVALID]", v->u.str);
+        printf("[INVALID]", v->u.mstring->str);
         break;
     case ValueType_Native:
-        printf("[Native]", v->u.str);
+        printf("[Native]", v->u.mstring->str);
         break;
     default:
-        printf("[ERROR TYPE]", v->u.str);
+        printf("[ERROR TYPE]", v->u.mstring->str);
         abort();
         break;
     }

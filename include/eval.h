@@ -3,6 +3,7 @@
 #include "../include/interpreter.h"
 #include "../include/create.h"
 #include "../include/MEM.h"
+#include "../include/string_pool.h"
 
 typedef struct interpreter_tag Interpreter;
 
@@ -33,7 +34,8 @@ struct Value_tag
     union {
         int i;
         double d;
-        char *str;
+        // char *str;
+        MString*mstring;
         NativePointer *p;
     } u;
 };
