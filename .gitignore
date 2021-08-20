@@ -7,3 +7,5 @@ y.tab.h
 *.output
 *.sh
 lex.yy.c
+main
+tags

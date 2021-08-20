@@ -1,8 +1,6 @@
 #include "MEM.h"
 
-static void
-dump_buffer(unsigned char *buf, int size)
-{
+static void dump_buffer(unsigned char* buf, int size) {
     int i;
 
     for (i = 0; i < size; i++) {
@@ -14,9 +12,7 @@ dump_buffer(unsigned char *buf, int size)
     printf("\n");
 }
 
-static void
-fill_buffer(unsigned char *buf, int size)
-{
+static void fill_buffer(unsigned char* buf, int size) {
     int i;
 
     for (i = 0; i < size; i++) {
@@ -24,12 +20,10 @@ fill_buffer(unsigned char *buf, int size)
     }
 }
 
-int
-main(void)
-{
-    unsigned char *p1;
-    unsigned char *p2;
-    unsigned char *p3;
+int main(void) {
+    unsigned char* p1;
+    unsigned char* p2;
+    unsigned char* p3;
 
     p1 = MEM_malloc(10);
     dump_buffer(p1, 10);
@@ -66,4 +60,3 @@ main(void)
 
     return 0;
 }
-

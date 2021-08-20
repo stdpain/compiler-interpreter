@@ -1,57 +1,48 @@
+#include "memory.h"
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include "memory.h"
 
-static void default_error_handler(MEM_Controller controller,
-                                  char *filename, int line, char *msg);
+static void default_error_handler(MEM_Controller controller, char* filename, int line, char* msg);
 
-static struct MEM_Controller_tag st_default_controller = {
-    NULL,/* stderr */
-    default_error_handler,
-    MEM_FAIL_AND_EXIT
-};
+static struct MEM_Controller_tag st_default_controller = {NULL, /* stderr */
+                                                          default_error_handler, MEM_FAIL_AND_EXIT};
 MEM_Controller mem_default_controller = &st_default_controller;
 
 typedef union {
-    long        l_dummy;
-    double      d_dummy;
-    void        *p_dummy;
+    long l_dummy;
+    double d_dummy;
+    void* p_dummy;
 } Align;
 
-#define MARK_SIZE       (4)
+#define MARK_SIZE (4)
 
 typedef struct {
-    int         size;
-    char        *filename;
-    int         line;
-    Header      *prev;
-    Header      *next;
-    unsigned char       mark[MARK_SIZE];
+    int size;
+    char* filename;
+    int line;
+    Header* prev;
+    Header* next;
+    unsigned char mark[MARK_SIZE];
 } HeaderStruct;
 
-#define ALIGN_SIZE      (sizeof(Align))
-#define revalue_up_align(val)   ((val) ? (((val) - 1) / ALIGN_SIZE + 1) : 0)
-#define HEADER_ALIGN_SIZE       (revalue_up_align(sizeof(HeaderStruct)))
+#define ALIGN_SIZE (sizeof(Align))
+#define revalue_up_align(val) ((val) ? (((val)-1) / ALIGN_SIZE + 1) : 0)
+#define HEADER_ALIGN_SIZE (revalue_up_align(sizeof(HeaderStruct)))
 #define MARK (0xCD)
 
 union Header_tag {
-    HeaderStruct        s;
-    Align               u[HEADER_ALIGN_SIZE];
+    HeaderStruct s;
+    Align u[HEADER_ALIGN_SIZE];
 };
 
-static void
-default_error_handler(MEM_Controller controller,
-                      char *filename, int line, char *msg)
-{
-    fprintf(controller->error_fp,
-            "MEM:%s failed in %s at %d\n", msg, filename, line);
+static void default_error_handler(MEM_Controller controller, char* filename, int line, char* msg) {
+    fprintf(controller->error_fp, "MEM:%s failed in %s at %d\n", msg, filename, line);
 }
 
-static void
-error_handler(MEM_Controller controller, char *filename, int line, char *msg)
-{
+static void error_handler(MEM_Controller controller, char* filename, int line, char* msg) {
     if (controller->error_fp == NULL) {
         controller->error_fp = stderr;
     }
@@ -62,10 +53,8 @@ error_handler(MEM_Controller controller, char *filename, int line, char *msg)
     }
 }
 
-MEM_Controller
-MEM_create_controller(void)
-{
-    MEM_Controller      p;
+MEM_Controller MEM_create_controller(void) {
+    MEM_Controller p;
 
     p = MEM_malloc_func(&st_default_controller, __FILE__, __LINE__,
                         sizeof(struct MEM_Controller_tag));
@@ -75,9 +64,7 @@ MEM_create_controller(void)
 }
 
 #ifdef DEBUG
-static void
-chain_block(MEM_Controller controller, Header *new_header)
-{
+static void chain_block(MEM_Controller controller, Header* new_header) {
     if (controller->block_header) {
         controller->block_header->s.prev = new_header;
     }
@@ -86,9 +73,7 @@ chain_block(MEM_Controller controller, Header *new_header)
     controller->block_header = new_header;
 }
 
-static void
-rechain_block(MEM_Controller controller, Header *header)
-{
+static void rechain_block(MEM_Controller controller, Header* header) {
     if (header->s.prev) {
         header->s.prev->s.next = header;
     } else {
@@ -99,9 +84,7 @@ rechain_block(MEM_Controller controller, Header *header)
     }
 }
 
-static void
-unchain_block(MEM_Controller controller, Header *header)
-{
+static void unchain_block(MEM_Controller controller, Header* header) {
     if (header->s.prev) {
         header->s.prev->s.next = header->s.next;
     } else {
@@ -112,26 +95,20 @@ unchain_block(MEM_Controller controller, Header *header)
     }
 }
 
-void
-set_header(Header *header, int size, char *filename, int line)
-{
+void set_header(Header* header, int size, char* filename, int line) {
     header->s.size = size;
     header->s.filename = filename;
     header->s.line = line;
     memset(header->s.mark, MARK, (char*)&header[1] - (char*)header->s.mark);
 }
 
-void
-set_tail(void *ptr, int alloc_size)
-{
-    char *tail;
+void set_tail(void* ptr, int alloc_size) {
+    char* tail;
     tail = ((char*)ptr) + alloc_size - MARK_SIZE;
     memset(tail, MARK, MARK_SIZE);
 }
 
-void
-check_mark_sub(unsigned char *mark, int size)
-{
+void check_mark_sub(unsigned char* mark, int size) {
     int i;
 
     for (i = 0; i < size; i++) {
@@ -142,22 +119,17 @@ check_mark_sub(unsigned char *mark, int size)
     }
 }
 
-void
-check_mark(Header *header)
-{
-    unsigned char        *tail;
+void check_mark(Header* header) {
+    unsigned char* tail;
     check_mark_sub(header->s.mark, (char*)&header[1] - (char*)header->s.mark);
     tail = ((unsigned char*)header) + header->s.size + sizeof(Header);
     check_mark_sub(tail, MARK_SIZE);
 }
 #endif /* DEBUG */
 
-void*
-MEM_malloc_func(MEM_Controller controller, char *filename, int line,
-                size_t size)
-{
-    void        *ptr;
-    size_t      alloc_size;
+void* MEM_malloc_func(MEM_Controller controller, char* filename, int line, size_t size) {
+    void* ptr;
+    size_t alloc_size;
 
 #ifdef DEBUG
     alloc_size = size + sizeof(Header) + MARK_SIZE;
@@ -180,16 +152,14 @@ MEM_malloc_func(MEM_Controller controller, char *filename, int line,
     return ptr;
 }
 
-void*
-MEM_realloc_func(MEM_Controller controller, char *filename, int line,
-                 void *ptr, size_t size)
-{
-    void        *new_ptr;
-    size_t      alloc_size;
-    void        *real_ptr;
+void* MEM_realloc_func(MEM_Controller controller, char* filename, int line, void* ptr,
+                       size_t size) {
+    void* new_ptr;
+    size_t alloc_size;
+    void* real_ptr;
 #ifdef DEBUG
-    Header      old_header;
-    int         old_size;
+    Header old_header;
+    int old_size;
 
     alloc_size = size + sizeof(Header) + MARK_SIZE;
     if (ptr != NULL) {
@@ -227,23 +197,20 @@ MEM_realloc_func(MEM_Controller controller, char *filename, int line,
         set_header(new_ptr, size, filename, line);
         set_tail(new_ptr, alloc_size);
         chain_block(controller, (Header*)new_ptr);
-   }
+    }
     new_ptr = (char*)new_ptr + sizeof(Header);
     if (size > old_size) {
         memset((char*)new_ptr + old_size, 0xCC, size - old_size);
     }
 #endif
 
-    return(new_ptr);
+    return (new_ptr);
 }
 
-char *
-MEM_strdup_func(MEM_Controller controller, char *filename, int line,
-                char *str)
-{
-    char        *ptr;
-    int         size;
-    size_t      alloc_size;
+char* MEM_strdup_func(MEM_Controller controller, char* filename, int line, char* str) {
+    char* ptr;
+    int size;
+    size_t alloc_size;
 
     size = strlen(str) + 1;
 #ifdef DEBUG
@@ -265,18 +232,15 @@ MEM_strdup_func(MEM_Controller controller, char *filename, int line,
 #endif
     strcpy(ptr, str);
 
-    return(ptr);
+    return (ptr);
 }
 
-void
-MEM_free_func(MEM_Controller controller, void *ptr)
-{
-    void        *real_ptr;
+void MEM_free_func(MEM_Controller controller, void* ptr) {
+    void* real_ptr;
 #ifdef DEBUG
     int size;
 #endif
-    if (ptr == NULL)
-        return;
+    if (ptr == NULL) return;
 
 #ifdef DEBUG
     real_ptr = (char*)ptr - sizeof(Header);
@@ -291,36 +255,28 @@ MEM_free_func(MEM_Controller controller, void *ptr)
     free(real_ptr);
 }
 
-void
-MEM_set_error_handler(MEM_Controller controller, MEM_ErrorHandler handler)
-{
+void MEM_set_error_handler(MEM_Controller controller, MEM_ErrorHandler handler) {
     controller->error_handler = handler;
 }
 
-void
-MEM_set_fail_mode(MEM_Controller controller, MEM_FailMode mode)
-{
+void MEM_set_fail_mode(MEM_Controller controller, MEM_FailMode mode) {
     controller->fail_mode = mode;
 }
 
-void
-MEM_dump_blocks_func(MEM_Controller controller, FILE *fp)
-{
+void MEM_dump_blocks_func(MEM_Controller controller, FILE* fp) {
 #ifdef DEBUG
-    Header *pos;
+    Header* pos;
     int counter = 0;
     int i;
 
     for (pos = controller->block_header; pos; pos = pos->s.next) {
         check_mark(pos);
-        fprintf(fp, "[%04d]%p********************\n", counter,
-                (char*)pos + sizeof(Header));
-        fprintf(fp, "%s line %d size..%d\n",
-                pos->s.filename, pos->s.line, pos->s.size);
+        fprintf(fp, "[%04d]%p********************\n", counter, (char*)pos + sizeof(Header));
+        fprintf(fp, "%s line %d size..%d\n", pos->s.filename, pos->s.line, pos->s.size);
         fprintf(fp, "[");
         for (i = 0; i < pos->s.size; i++) {
-            if (isprint(*((char*)pos + sizeof(Header)+i))) {
-                fprintf(fp, "%c", *((char*)pos + sizeof(Header)+i));
+            if (isprint(*((char*)pos + sizeof(Header) + i))) {
+                fprintf(fp, "%c", *((char*)pos + sizeof(Header) + i));
             } else {
                 fprintf(fp, ".");
             }
@@ -331,22 +287,17 @@ MEM_dump_blocks_func(MEM_Controller controller, FILE *fp)
 #endif /* DEBUG */
 }
 
-void
-MEM_check_block_func(MEM_Controller controller, char *filename, int line,
-                     void *p)
-{
+void MEM_check_block_func(MEM_Controller controller, char* filename, int line, void* p) {
 #ifdef DEBUG
-    void *real_ptr = ((char*)p) - sizeof(Header);
+    void* real_ptr = ((char*)p) - sizeof(Header);
 
     check_mark(real_ptr);
 #endif /* DEBUG */
 }
 
-void MEM_check_all_blocks_func(MEM_Controller controller,
-                               char *filename, int line)
-{
+void MEM_check_all_blocks_func(MEM_Controller controller, char* filename, int line) {
 #ifdef DEBUG
-    Header *pos;
+    Header* pos;
 
     for (pos = controller->block_header; pos; pos = pos->s.next) {
         check_mark(pos);

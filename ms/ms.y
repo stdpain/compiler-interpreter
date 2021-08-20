@@ -4,6 +4,13 @@
 #include "../include/interpreter.h"
 #define YYDEBUG 1
 %}
+
+%{
+// https://stackoverflow.com/questions/23717039/generating-a-compiler-from-lex-and-yacc-grammar
+int yylex();
+void yyerror(const char *s);
+%}
+
 %union {
     char                *identifier;
     Expression          *expression;
