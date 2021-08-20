@@ -1,18 +1,24 @@
 %{
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "../include/create.h"
-#include "y.tab.h"
+#include "ast/creator.h"
+#include "ast/exprs.h"
+#include "ast/parser.h"
+#include "gen/ms_yacc.y.hpp"
 
 
 /* 一个功能性函数-都要加 */
-int
-yywrap(void)
+extern "C" {
+int yywrap(void)
 {
     return 1;
 }
+}
+
 
 %}
+
 %start COMMENT STRING_LITERAL_STATE
 %%
 <INITIAL>"function"  return FUNCTION;
@@ -43,7 +49,7 @@ yywrap(void)
 <INITIAL>","         return COMMA;
 
 <INITIAL>[A-Za-z_][A-Za-z_0-9]* {
-    yylval.identifier = Interpreter_str_malloc(yytext);
+    yylval.identifier = stdpain::Parser::getInstance()->new_str(yytext);
     return IDENTIFIER;
 }
 <INITIAL>([1-9][0-9]*)|"0" {
@@ -58,8 +64,9 @@ yywrap(void)
     yylval.db = temp;
     return DOUBLE_LITERAL;
 }
+
 <INITIAL>\" {
-    open_charbuffer();
+    charbuffer_open();
     BEGIN STRING_LITERAL_STATE;
 }
 <INITIAL>[ \t] ;
@@ -77,21 +84,23 @@ yywrap(void)
     printf("meet:%s",buf);
     abort();
 }
+
 <COMMENT>\n     {
     BEGIN INITIAL;
 }
 <COMMENT>.      ;
+
 <STRING_LITERAL_STATE>\"        {
-    yylval.identifier = flush_charbuffer();
+    yylval.identifier = charbuffer_flush();
     BEGIN INITIAL;
     return STRING_LITERAL;
 }
 <STRING_LITERAL_STATE>\n        {
-    addc_charbuffer('\n');
+    charbuffer_append('\n');
 }
-<STRING_LITERAL_STATE>\\\"      addc_charbuffer('"');
-<STRING_LITERAL_STATE>\\n       addc_charbuffer('\n');
-<STRING_LITERAL_STATE>\\t       addc_charbuffer('\t');
-<STRING_LITERAL_STATE>\\\\      addc_charbuffer('\\');
-<STRING_LITERAL_STATE>.         addc_charbuffer(yytext[0]);
+<STRING_LITERAL_STATE>\\\"      charbuffer_append('"');
+<STRING_LITERAL_STATE>\\n       charbuffer_append('\n');
+<STRING_LITERAL_STATE>\\t       charbuffer_append('\t');
+<STRING_LITERAL_STATE>\\\\      charbuffer_append('\\');
+<STRING_LITERAL_STATE>.         charbuffer_append(yytext[0]);
 %%

@@ -9,3 +9,4 @@ y.tab.h
 lex.yy.c
 main
 tags
+interpreter/build/
