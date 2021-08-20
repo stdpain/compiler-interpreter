@@ -7,6 +7,7 @@
 %}
 
 %{
+using Parser = stdpain::Parser;
 // https://stackoverflow.com/questions/23717039/generating-a-compiler-from-lex-and-yacc-grammar
 int yylex();
 void yyerror(const char *s);
@@ -53,9 +54,7 @@ definition_or_statement:function_definition
         }
         |statement
         {
-                // Statement_list *list = Interpreter_getlist();
-                // list = StatementList_add(list, $1);
-                // Interpreter_setlist(list);
+                Parser::getInstance()->append_statement($1);
         }
         ;
 function_definition: FUNCTION IDENTIFIER LP arglist RP block

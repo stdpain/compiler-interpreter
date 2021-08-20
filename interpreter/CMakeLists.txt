@@ -30,6 +30,7 @@ add_subdirectory(gen)
 
 add_library(Component STATIC
     ast/creator.cpp
+    ast/parser.cpp
 )
 
 add_executable(interpreter
