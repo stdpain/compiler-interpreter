@@ -77,73 +77,61 @@ statement:expression_statement
         ;
 expression_statement:expression SEMICOLON
         {
-                // $$=create_ExpressionStatement($1);
+                $$ = stdpain::Parser::getInstance()->new_expression_statement($1);
         }
         ;
 expression: value_expression
         |IDENTIFIER ASSIGN expression
         {
-                // Assign_Expression*exp = createAssignExpression($1,$3);
-                // Expression*assgn = AssignExpressionWarpper(exp);
-                // $$=assgn;
+                $$ = stdpain::Parser::getInstance()->new_assign_expression($1, $3);
         }
         ;
 value_expression: compare_expression
         |value_expression EQ compare_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(EQ_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin);
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::EQ, $1, $3);
         }
         |value_expression NE compare_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(NE_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin);
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::NE, $1, $3);
         }
         ;
 compare_expression:add_sub_expression 
         |compare_expression GT add_sub_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(GT_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin);
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::GT, $1, $3);
         }
         |compare_expression GE add_sub_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(GE_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin);
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::GE, $1, $3);
         }
         |compare_expression LT add_sub_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(LT_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin); 
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::LT, $1, $3);
         }
         |compare_expression LE add_sub_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(LE_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin); 
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::LE, $1, $3);
         }
         ;
 add_sub_expression:mul_div_expression 
         |add_sub_expression ADD mul_div_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(ADD_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin); 
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::ADD, $1, $3);
         }
         |add_sub_expression SUB mul_div_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(SUB_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin); 
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::SUB, $1, $3);
         }
         ;
 mul_div_expression:primary_expression
         |mul_div_expression DIV primary_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(DIV_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin); 
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::DIV, $1, $3);
         }
         |mul_div_expression MUL primary_expression
         {
-                // Binary_Expression*bin = createBinaryExpression(MUL_OPERATOR,$1,$3);
-                // $$=binExpressionWarpper(bin); 
+                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::MUL, $1, $3);
         }
         ;
 primary_expression:SUB primary_expression
@@ -152,49 +140,49 @@ primary_expression:SUB primary_expression
         }
         |LP expression RP
         {
-                // $$=$2;
+                $$ = $2;
         }
         |IDENTIFIER
         {
-                // $$=create_IDExpression($1); 
+                $$ = stdpain::Parser::getInstance()->new_primary_expression($1, true);
         }
         |STRING_LITERAL
         {
-                // $$=create_StrExpression($1); 
+                $$ = stdpain::Parser::getInstance()->new_primary_expression($1, false);
         }
         |INT_LITERAL
         {
-                // $$=create_IntergerExpression($1);
+                $$ = stdpain::Parser::getInstance()->new_primary_expression($1);
         }
         |DOUBLE_LITERAL
         {
-                // $$=create_DoubleExpression($1);
+                $$ = stdpain::Parser::getInstance()->new_primary_expression($1);
         }
         |IDENTIFIER LP RP
         {
-                // $$=create_FuncCallExpression($1,NULL);
+                // $$=create_FuncCallExpression($1, NULL);
         }
         |IDENTIFIER LP arglist RP
         {
-                // $$=create_FuncCallExpression($1,$3);
+                // $$=create_FuncCallExpression($1, $3);
         }
         ;
 statement_list:statement_list statement
         {
-                // $$=StatementList_add($1,$2);
+                $$ = stdpain::Parser::getInstance()->add_statement($1, $2);
         }
         |statement
         {
-                // $$=createStatementList($1);
+                $$ = stdpain::Parser::getInstance()->create_statement_list();
         }
         ;
 block:LC RC
         {
-                // $$=NULL;
+                $$ = NULL;
         }
         |LC statement_list RC
         {
-                // $$=$2;
+                $$ = $2;
         }
         ;
 arglist:arglist COMMA arg

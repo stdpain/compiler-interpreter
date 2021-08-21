@@ -16,10 +16,10 @@
 # under the License.
 
 # where to put generated libraries
-set(LIBRARY_OUTPUT_PATH "${BUILD_DIR}/src/gen")
+# set(LIBRARY_OUTPUT_PATH "${BUILD_DIR}/src/gen")
 
 # where to put generated binaries
-set(EXECUTABLE_OUTPUT_PATH "${BUILD_DIR}/src/gen")
+# set(EXECUTABLE_OUTPUT_PATH "${BUILD_DIR}/src/gen")
 
 message(STATUS ${GENSRC_DIR})
 add_library(Gen STATIC
