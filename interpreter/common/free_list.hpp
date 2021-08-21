@@ -23,8 +23,8 @@ public:
         return t;
     }
 
-    template <class T>
-    T* add_array(T* t) {
+    template <class T[]>
+    T* add(T* t) {
         std::lock_guard<Lock> l(_lock);
         _objects.emplace_back(Element{t, [](void* obj) { delete[] reinterpret_cast<T*>(obj); }});
         return t;

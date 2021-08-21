@@ -20,12 +20,15 @@ enum class ExpressionType {
     Unary,
     Binary,
     Assign,
+    FunctionCall,
 };
 
 struct Expression {
     ExpressionType type;
     Expression(ExpressionType type_) : type(type_) {}
 };
+
+using ExpressionList = std::vector<Expression*>;
 
 struct PrimaryExpression : Expression {
     ValueType value_type;
@@ -59,10 +62,15 @@ struct AssignExpression : Expression {
               expression(expression_) {}
 };
 
+enum class UnaryExprType { INV };
+
 struct UnaryExpression : Expression {
+    UnaryExprType unary_expr_type;
     Expression* expression;
-    UnaryExpression(Expression* expression_)
-            : Expression(ExpressionType::Unary), expression(expression_) {}
+    UnaryExpression(UnaryExprType unary_expr_type_, Expression* expression_)
+            : Expression(ExpressionType::Unary),
+              unary_expr_type(unary_expr_type_),
+              expression(expression_) {}
 };
 
 enum class BinaryExprType { ADD, SUB, MUL, DIV, LT, LE, EQ, NE, GT, GE };
@@ -77,6 +85,16 @@ struct BinaryExpression : Expression {
               binary_expr_type(binary_expr_type_),
               left_expression(left),
               right_expression(right) {}
+};
+
+struct FunctionCallExpression : Expression {
+    const char* function_name;
+    ExpressionList* parameters;
+
+    FunctionCallExpression(const char* function_name_, ExpressionList* expressions_)
+            : Expression(ExpressionType::FunctionCall),
+              function_name(function_name_),
+              parameters(expressions_) {}
 };
 
 enum class StatementType { Expression };
@@ -94,4 +112,17 @@ struct ExpressionStatement : Statement {
     Expression* expression;
 };
 
-struct Function {};
+struct Param {
+    const char* identifier;
+};
+using ParamList = std::vector<Param*>;
+
+struct Function {
+    const char* name;
+    ParamList* parameters;
+    StatementList* statements;
+
+    Function(const char* name_, ParamList* parameters_, StatementList* statements_)
+            : name(name_), parameters(parameters_), statements(statements_) {}
+};
+using FunctionList = std::vector<Function*>;

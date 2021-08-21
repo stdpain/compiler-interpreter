@@ -17,10 +17,3 @@ void charbuffer_append(char c) {
 const char* charbuffer_flush() {
     return mbuffer.c_str();
 }
-
-const char* interpreter_newstr(const char* str) {
-    size_t sz = strlen(str);
-    char* mem = static_cast<char*>(malloc(sz + 1));
-    memcpy(mem, str, sz + 1);
-    return mem;
-}

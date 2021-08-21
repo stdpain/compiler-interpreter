@@ -21,6 +21,9 @@ void yyerror(const char *s);
     Statement* statement;
     StatementList* statement_list;
     Function* function;
+    ParamList* paramlist;
+    Param* param;
+    ExpressionList* expression_list; 
 };
 
 %token <integer> INT_LITERAL
@@ -30,9 +33,11 @@ void yyerror(const char *s);
         EQ NE GT GE LT LE LP RP LC RC SEMICOLON IDENTIFIER 
         BREAK CONTINUE RETURN COMMA STRING_LITERAL
 
-%type <paramlist>arglist arg
+%type <param>arg
+%type <paramlist>arglist
 %type <function>function_definition
         
+%type <expression_list> expressions
 %type <expression> definition_or_statement
         expression value_expression compare_expression add_sub_expression mul_div_expression
         primary_expression expression_option
@@ -48,9 +53,8 @@ translation_unit: definition_or_statement
         ;
 definition_or_statement:function_definition
         {
-                // Function_t*funclist = Interpreter_getFunclist();
-                // funclist = Function_add(funclist, $1);
-                // Interpreter_setFunclist(funclist);
+                auto instance = Parser::getInstance();
+                instance->append_function($1);
         }
         |statement
         {
@@ -59,12 +63,13 @@ definition_or_statement:function_definition
         ;
 function_definition: FUNCTION IDENTIFIER LP arglist RP block
         {
-                // $$=Functon_define($2,$4,$6);
+                Parser::getInstance()->new_function($2, $4, $6);
         }
         |
         FUNCTION IDENTIFIER LP RP block
         {
-                // $$=Functon_define($2,NULL,$5);
+                auto instance = Parser::getInstance();
+                instance->new_function($2, instance->create_param_list(), $5);
         }
         ;
 statement:expression_statement
@@ -77,66 +82,66 @@ statement:expression_statement
         ;
 expression_statement:expression SEMICOLON
         {
-                $$ = stdpain::Parser::getInstance()->new_expression_statement($1);
+                $$ = Parser::getInstance()->new_expression_statement($1);
         }
         ;
 expression: value_expression
         |IDENTIFIER ASSIGN expression
         {
-                $$ = stdpain::Parser::getInstance()->new_assign_expression($1, $3);
+                $$ = Parser::getInstance()->new_assign_expression($1, $3);
         }
         ;
 value_expression: compare_expression
         |value_expression EQ compare_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::EQ, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::EQ, $1, $3);
         }
         |value_expression NE compare_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::NE, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::NE, $1, $3);
         }
         ;
 compare_expression:add_sub_expression 
         |compare_expression GT add_sub_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::GT, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::GT, $1, $3);
         }
         |compare_expression GE add_sub_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::GE, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::GE, $1, $3);
         }
         |compare_expression LT add_sub_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::LT, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::LT, $1, $3);
         }
         |compare_expression LE add_sub_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::LE, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::LE, $1, $3);
         }
         ;
 add_sub_expression:mul_div_expression 
         |add_sub_expression ADD mul_div_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::ADD, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::ADD, $1, $3);
         }
         |add_sub_expression SUB mul_div_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::SUB, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::SUB, $1, $3);
         }
         ;
 mul_div_expression:primary_expression
         |mul_div_expression DIV primary_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::DIV, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::DIV, $1, $3);
         }
         |mul_div_expression MUL primary_expression
         {
-                $$ = stdpain::Parser::getInstance()->new_binary_expression(BinaryExprType::MUL, $1, $3);
+                $$ = Parser::getInstance()->new_binary_expression(BinaryExprType::MUL, $1, $3);
         }
         ;
 primary_expression:SUB primary_expression
         {
-                // $$=$2;
+                $$ = Parser::getInstance()->new_unary_expression(UnaryExprType::INV, $2);
         }
         |LP expression RP
         {
@@ -144,41 +149,56 @@ primary_expression:SUB primary_expression
         }
         |IDENTIFIER
         {
-                $$ = stdpain::Parser::getInstance()->new_primary_expression($1, true);
+                $$ = Parser::getInstance()->new_primary_expression($1, true);
         }
         |STRING_LITERAL
         {
-                $$ = stdpain::Parser::getInstance()->new_primary_expression($1, false);
+                $$ = Parser::getInstance()->new_primary_expression($1, false);
         }
         |INT_LITERAL
         {
-                $$ = stdpain::Parser::getInstance()->new_primary_expression($1);
+                $$ = Parser::getInstance()->new_primary_expression($1);
         }
         |DOUBLE_LITERAL
         {
-                $$ = stdpain::Parser::getInstance()->new_primary_expression($1);
+                $$ = Parser::getInstance()->new_primary_expression($1);
         }
         |IDENTIFIER LP RP
         {
-                // $$=create_FuncCallExpression($1, NULL);
+                auto instance = Parser::getInstance();
+                auto empty_expression = instance->create_expression_list();
+                $$ = instance->new_functioncall_expression($1, empty_expression);
         }
-        |IDENTIFIER LP arglist RP
+        |IDENTIFIER LP expressions RP
         {
-                // $$=create_FuncCallExpression($1, $3);
+                auto instance = Parser::getInstance();
+                $$ = instance->new_functioncall_expression($1, $3);
+        }
+        ;
+expressions:expressions expression
+        {
+                auto instance = Parser::getInstance();
+                $$ = instance->add_expression($1, $2);
+        }
+        |expression
+        {
+                auto instance = Parser::getInstance();
+                auto expressions = instance->create_expression_list();
+                $$ = instance->add_expression(expressions, $1);
         }
         ;
 statement_list:statement_list statement
         {
-                $$ = stdpain::Parser::getInstance()->add_statement($1, $2);
+                $$ = Parser::getInstance()->add_statement($1, $2);
         }
         |statement
         {
-                $$ = stdpain::Parser::getInstance()->create_statement_list();
+                $$ = Parser::getInstance()->create_statement_list();
         }
         ;
 block:LC RC
         {
-                $$ = NULL;
+                $$ = Parser::getInstance()->create_statement_list();
         }
         |LC statement_list RC
         {
@@ -187,14 +207,19 @@ block:LC RC
         ;
 arglist:arglist COMMA arg
         {
-                // $$=ParamList_add($1,$3);
+                $$ = Parser::getInstance()->add_param($1, $3);
         }
         |
         arg
+        {
+                auto instance = Parser::getInstance();
+                auto param_list = instance->create_param_list();
+                $$ = instance->add_param(param_list, $1);
+        }
         ;
 arg:    IDENTIFIER
         {
-                // $$=createParamList($1);
+                $$ = Parser::getInstance()->create_param($1);
         }
         ;
 expression_option:{$$=NULL;}

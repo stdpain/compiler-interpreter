@@ -4,6 +4,7 @@
 #include <string.h>
 #include "ast/creator.h"
 #include "ast/exprs.h"
+#include "ast/parser.h"
 #include "gen/ms_yacc.y.hpp"
 
 
@@ -48,7 +49,7 @@ int yywrap(void)
 <INITIAL>","         return COMMA;
 
 <INITIAL>[A-Za-z_][A-Za-z_0-9]* {
-    yylval.identifier = interpreter_newstr(yytext);
+    yylval.identifier = stdpain::Parser::getInstance()->new_str(yytext);
     return IDENTIFIER;
 }
 <INITIAL>([1-9][0-9]*)|"0" {
