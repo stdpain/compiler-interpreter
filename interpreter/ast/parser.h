@@ -25,17 +25,24 @@ public:
     // Expression
     ExpressionList* create_expression_list();
     ExpressionList* add_expression(ExpressionList* lst, Expression* expression);
+    
+    EmptyExpression* new_empty_expression();
     AssignExpression* new_assign_expression(const char* identifier, Expression* expr);
 
     template <typename... Args>
-    PrimaryExpression* new_primary_expression(Args&&... __args) {
-        return _free_list.add(new PrimaryExpression(std::forward<Args>(__args)...));
+    PrimaryExpression* new_primary_expression(Args&&... args) {
+        return _free_list.add(new PrimaryExpression(std::forward<Args>(args)...));
     }
     UnaryExpression* new_unary_expression(UnaryExprType unary_expr_type, Expression* expression);
     BinaryExpression* new_binary_expression(BinaryExprType binary_expr_type, Expression* left,
                                             Expression* right);
     // Statement
     ExpressionStatement* new_expression_statement(Expression* expr);
+    
+    template<typename SpecStatement, typename... Args>
+    SpecStatement* new_statement(Args&&... args) {
+        return _free_list.add(new SpecStatement(std::forward<Args>(args)...));
+    }
 
     void append_statement(Statement* statement);
     StatementList* add_statement(StatementList* lst, Statement* statement);

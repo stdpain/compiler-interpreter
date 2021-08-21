@@ -175,10 +175,10 @@ primary_expression:SUB primary_expression
                 $$ = instance->new_functioncall_expression($1, $3);
         }
         ;
-expressions:expressions expression
+expressions:expressions COMMA expression
         {
                 auto instance = Parser::getInstance();
-                $$ = instance->add_expression($1, $2);
+                $$ = instance->add_expression($1, $3);
         }
         |expression
         {
@@ -222,32 +222,32 @@ arg:    IDENTIFIER
                 $$ = Parser::getInstance()->create_param($1);
         }
         ;
-expression_option:{$$=NULL;}
+expression_option: { $$ = Parser::getInstance()->new_empty_expression(); }
         |expression
         ;
-for_statement: FOR LP expression_option SEMICOLON expression_option SEMICOLON expression_option  RP block
+for_statement: FOR LP expression_option SEMICOLON expression_option SEMICOLON expression_option RP block
         {
-                // $$=create_FORStatement($3,$5,$7,$9);
+                $$ = Parser::getInstance()->new_statement<ForStatement>($3, $5, $7, $9);
         }       
         ;
 if_statement: IF LP expression RP block
         {
-                // $$=create_IFStatement($3,$5);
+                $$ = Parser::getInstance()->new_statement<IfStatement>($3, $5);
         }
         ;
 break_statement:BREAK SEMICOLON
         {
-                // $$=create_Statement(Statement_Type_Break);
+                $$ = Parser::getInstance()->new_statement<BreakStatement>();
         }
         ;
 continue_statement:CONTINUE SEMICOLON
         {
-                // $$=create_Statement(Statement_Type_Continue);
+                $$ = Parser::getInstance()->new_statement<ContinueStatement>();
         }
         ;
 return_statement:RETURN IDENTIFIER
         {
-                // $$=create_Statement(Statement_Type_Rtn);
+                $$ = Parser::getInstance()->new_statement<ReturnStatement>();
         }
         ;
 global_declaration:GLOBAL IDENTIFIER

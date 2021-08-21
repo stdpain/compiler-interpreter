@@ -67,6 +67,10 @@ ExpressionList* Parser::add_expression(ExpressionList* lst, Expression* expressi
     return lst;
 }
 
+EmptyExpression* Parser::new_empty_expression() {
+    return _free_list.add(new EmptyExpression());
+}
+
 AssignExpression* Parser::new_assign_expression(const char* identifier, Expression* expr) {
     return _free_list.add(new AssignExpression(identifier, expr));
 }

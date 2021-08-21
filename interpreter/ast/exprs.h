@@ -21,6 +21,7 @@ enum class ExpressionType {
     Binary,
     Assign,
     FunctionCall,
+    Empty,
 };
 
 struct Expression {
@@ -29,6 +30,10 @@ struct Expression {
 };
 
 using ExpressionList = std::vector<Expression*>;
+
+struct EmptyExpression : Expression {
+    EmptyExpression() : Expression(ExpressionType::Empty) {}
+};
 
 struct PrimaryExpression : Expression {
     ValueType value_type;
@@ -97,7 +102,14 @@ struct FunctionCallExpression : Expression {
               parameters(expressions_) {}
 };
 
-enum class StatementType { Expression };
+enum class StatementType {
+    Expression,
+    For,
+    If,
+    Break,
+    Continue,
+    Return,
+};
 
 struct Statement {
     StatementType type;
@@ -112,9 +124,47 @@ struct ExpressionStatement : Statement {
     Expression* expression;
 };
 
+struct ForStatement : Statement {
+    Expression* init_expression;
+    Expression* cond_expression;
+    Expression* inc_expression;
+    StatementList* loop_body;
+
+    ForStatement(Expression* init_expression_, Expression* cond_expression_,
+                 Expression* inc_expression_, StatementList* statements)
+            : Statement(StatementType::For),
+              init_expression(init_expression_),
+              cond_expression(cond_expression_),
+              inc_expression(inc_expression_),
+              loop_body(statements) {}
+};
+
+struct IfStatement : Statement {
+    Expression* cond_expression;
+    StatementList* statements;
+
+    IfStatement(Expression* cond_expression_, StatementList* statements_)
+            : Statement(StatementType::If),
+              cond_expression(cond_expression_),
+              statements(statements_) {}
+};
+
+struct BreakStatement : Statement {
+    BreakStatement() : Statement(StatementType::Break) {}
+};
+
+struct ContinueStatement : Statement {
+    ContinueStatement() : Statement(StatementType::Continue) {}
+};
+
+struct ReturnStatement : Statement {
+    ReturnStatement() : Statement(StatementType::Return) {}
+};
+
 struct Param {
     const char* identifier;
 };
+
 using ParamList = std::vector<Param*>;
 
 struct Function {
