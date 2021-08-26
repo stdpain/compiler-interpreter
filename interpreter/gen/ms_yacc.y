@@ -63,13 +63,14 @@ definition_or_statement:function_definition
         ;
 function_definition: FUNCTION IDENTIFIER LP arglist RP block
         {
-                Parser::getInstance()->new_function($2, $4, $6);
+                auto parser = Parser::getInstance();
+                $$ = parser->new_function($2, $4, $6);
         }
         |
         FUNCTION IDENTIFIER LP RP block
         {
-                auto instance = Parser::getInstance();
-                instance->new_function($2, instance->create_param_list(), $5);
+                auto parser = Parser::getInstance();
+                $$ = parser->new_function($2, parser->create_param_list(), $5);
         }
         ;
 statement:expression_statement

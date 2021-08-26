@@ -91,7 +91,8 @@ int yywrap(void)
 <COMMENT>.      ;
 
 <STRING_LITERAL_STATE>\"        {
-    yylval.identifier = charbuffer_flush();
+    auto parser = stdpain::Parser::getInstance();
+    yylval.identifier = parser->new_str(charbuffer_flush());
     BEGIN INITIAL;
     return STRING_LITERAL;
 }
