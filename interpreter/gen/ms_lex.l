@@ -2,24 +2,23 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include "ast/creator.h"
 #include "ast/exprs.h"
-#include "ast/parser.h"
+#include "ast/ast_builder.h"
 #include "gen/ms_yacc.y.hpp"
-
-
-/* 一个功能性函数-都要加 */
-extern "C" {
-int yywrap(void)
-{
-    return 1;
-}
-}
-
-
+#include "parser/context.h"
+#include "logging/interpreter_logger.hpp"
+#define YYSTYPE MSSTYPE
+#define YY_EXTRA_TYPE MSParseContext*
+using namespace ms;
 %}
 
+%option reentrant
+%option noyywrap
+%option bison-bridge
+%option prefix="ms"
+
 %start COMMENT STRING_LITERAL_STATE
+
 %%
 <INITIAL>"function"  return FUNCTION;
 <INITIAL>"global"    return GLOBAL;
@@ -42,6 +41,8 @@ int yywrap(void)
 <INITIAL>")"         return RP;
 <INITIAL>"{"         return LC;
 <INITIAL>"}"         return RC;
+<INITIAL>"["         return LSB;
+<INITIAL>"]"         return RSB;
 <INITIAL>";"         return SEMICOLON;
 <INITIAL>"break"     return BREAK;
 <INITIAL>"continue"  return CONTINUE;
@@ -49,24 +50,24 @@ int yywrap(void)
 <INITIAL>","         return COMMA;
 
 <INITIAL>[A-Za-z_][A-Za-z_0-9]* {
-    yylval.identifier = stdpain::Parser::getInstance()->new_str(yytext);
+    msget_lval(yyscanner)->identifier = yyget_extra(yyscanner)->ast_builder->new_str(yytext);
     return IDENTIFIER;
 }
-<INITIAL>([1-9][0-9]*)|"0" {
+<INITIAL>([1-9][0-9]*) {
     int temp;
     sscanf(yytext, "%d", &temp);
-    yylval.integer = temp;
+    msget_lval(yyscanner)->integer = temp;
     return INT_LITERAL;
 }
 <INITIAL>[0-9]+\.[0-9]+ {
     double temp;
     sscanf(yytext, "%lf", &temp);
-    yylval.db = temp;
+    msget_lval(yyscanner)->db = temp;
     return DOUBLE_LITERAL;
 }
 
 <INITIAL>\" {
-    charbuffer_open();
+    yyget_extra(yyscanner)->ast_builder->buffer_open();
     BEGIN STRING_LITERAL_STATE;
 }
 <INITIAL>[ \t] ;
@@ -91,16 +92,16 @@ int yywrap(void)
 <COMMENT>.      ;
 
 <STRING_LITERAL_STATE>\"        {
-    yylval.identifier = charbuffer_flush();
+    msget_lval(yyscanner)->identifier = yyget_extra(yyscanner)->ast_builder->charbuffer_flush();
     BEGIN INITIAL;
     return STRING_LITERAL;
 }
 <STRING_LITERAL_STATE>\n        {
-    charbuffer_append('\n');
+    yyget_extra(yyscanner)->ast_builder->charbuffer_append('\n');
 }
-<STRING_LITERAL_STATE>\\\"      charbuffer_append('"');
-<STRING_LITERAL_STATE>\\n       charbuffer_append('\n');
-<STRING_LITERAL_STATE>\\t       charbuffer_append('\t');
-<STRING_LITERAL_STATE>\\\\      charbuffer_append('\\');
-<STRING_LITERAL_STATE>.         charbuffer_append(yytext[0]);
+<STRING_LITERAL_STATE>\\\"      yyget_extra(yyscanner)->ast_builder->charbuffer_append('"');
+<STRING_LITERAL_STATE>\\n       yyget_extra(yyscanner)->ast_builder->charbuffer_append('\n');
+<STRING_LITERAL_STATE>\\t       yyget_extra(yyscanner)->ast_builder->charbuffer_append('\t');
+<STRING_LITERAL_STATE>\\\\      yyget_extra(yyscanner)->ast_builder->charbuffer_append('\\');
+<STRING_LITERAL_STATE>.         yyget_extra(yyscanner)->ast_builder->charbuffer_append(yytext[0]);
 %%

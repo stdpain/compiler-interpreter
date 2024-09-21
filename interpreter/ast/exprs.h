@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 
 enum ValueType {
@@ -21,6 +22,7 @@ enum class ExpressionType {
     Binary,
     Assign,
     FunctionCall,
+    ARRAY_ACCESS,
     Empty,
 };
 
@@ -102,6 +104,15 @@ struct FunctionCallExpression : Expression {
               parameters(expressions_) {}
 };
 
+struct ArrayAccessExpresion : Expression {
+    const char* array_id;
+    Expression* expression;
+    ArrayAccessExpresion(const char* array_id_, Expression* expression_)
+            : Expression(ExpressionType::FunctionCall),
+              array_id(array_id_),
+              expression(expression_) {}
+};
+
 enum class StatementType {
     Expression,
     For,
@@ -120,7 +131,7 @@ using StatementList = std::vector<Statement*>;
 
 struct ExpressionStatement : Statement {
     ExpressionStatement(Expression* expression_)
-            : expression(expression_), Statement(StatementType::Expression) {}
+            : Statement(StatementType::Expression), expression(expression_) {}
     Expression* expression;
 };
 

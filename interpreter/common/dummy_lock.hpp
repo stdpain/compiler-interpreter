@@ -1,15 +1,10 @@
 #pragma once
 
-namespace stdpain
-{
+namespace ms {
 class DummyLock {
 public:
-    void lock() {
+    void lock() {}
 
-    }
-    
-    void unlock() {
-
-    }
+    void unlock() {}
 };
-} // namespace stdpain
+} // namespace ms

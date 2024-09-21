@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.12.0)
-project(vec)
+
+project(interpreter)
 
 set(CXX_GCC_FLAGS "${CXX_GCC_FLAGS} -fno-omit-frame-pointer -std=c++17")
 
@@ -29,8 +30,8 @@ include_directories(${GENSRC_DIR})
 add_subdirectory(gen)
 
 add_library(Component STATIC
-    ast/creator.cpp
-    ast/parser.cpp
+    ast/ast_builder.cpp
+    parser/parser.cpp
 )
 
 add_executable(interpreter
@@ -38,6 +39,10 @@ add_executable(interpreter
 )
 
 target_link_libraries(interpreter 
+    -Wl,--start-group
     Gen 
     Component
+    -Wl,--end-group
+    glog
+    gflags
 )

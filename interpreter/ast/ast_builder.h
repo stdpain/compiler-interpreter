@@ -1,14 +1,16 @@
 #pragma once
+
 #include "ast/exprs.h"
 #include "common/free_list.hpp"
-#include "logging/interpreter_logger.hpp"
 
-namespace stdpain {
-class Parser {
+namespace ms {
+class ASTBuilder {
 public:
-    static Parser* getInstance() {
-        static Parser instance;
-        return &instance;
+    void reset() {
+        _buffer.clear();
+        _free_list.clear();
+        _function_list.clear();
+        _statement_list.clear();
     }
 
     const char* new_str(const char* str);
@@ -25,9 +27,14 @@ public:
     // Expression
     ExpressionList* create_expression_list();
     ExpressionList* add_expression(ExpressionList* lst, Expression* expression);
-    
+
     EmptyExpression* new_empty_expression();
     AssignExpression* new_assign_expression(const char* identifier, Expression* expr);
+
+    template <typename SpecExpression, typename... Args>
+    SpecExpression* new_expression(Args&&... args) {
+        return _free_list.add(new SpecExpression(std::forward<Args>(args)...));
+    }
 
     template <typename... Args>
     PrimaryExpression* new_primary_expression(Args&&... args) {
@@ -38,8 +45,8 @@ public:
                                             Expression* right);
     // Statement
     ExpressionStatement* new_expression_statement(Expression* expr);
-    
-    template<typename SpecStatement, typename... Args>
+
+    template <typename SpecStatement, typename... Args>
     SpecStatement* new_statement(Args&&... args) {
         return _free_list.add(new SpecStatement(std::forward<Args>(args)...));
     }
@@ -48,10 +55,23 @@ public:
     StatementList* add_statement(StatementList* lst, Statement* statement);
     StatementList* create_statement_list();
 
+    void buffer_open() {
+        _buffer.reserve(256);
+        _buffer.clear();
+    }
+
+    void charbuffer_append(char c) { _buffer.push_back(c); }
+
+    const char* charbuffer_flush() { return _buffer.c_str(); }
+
 private:
     NoLockFreeList _free_list;
     // main statement list
     StatementList _statement_list;
+    // other function list
     FunctionList _function_list;
+
+private:
+    std::string _buffer;
 };
-} // namespace stdpain
+} // namespace ms

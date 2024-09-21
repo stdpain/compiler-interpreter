@@ -1,10 +1,10 @@
 #pragma once
-#include <vector>
 #include <mutex>
+#include <vector>
+
 #include "dummy_lock.hpp"
 
-namespace stdpain
-{
+namespace ms {
 template <class Lock>
 class FreeList {
 public:
@@ -19,16 +19,10 @@ public:
     T* add(T* t) {
         // TODO: Consider using a lock-free structure.
         std::lock_guard<Lock> l(_lock);
-        _objects.emplace_back(Element{t, [](void* obj) { delete reinterpret_cast<T*>(obj); }});
+        _objects.emplace_back(Element {t, [](void* obj) { delete reinterpret_cast<T*>(obj); }});
         return t;
     }
 
-    template <class T[]>
-    T* add(T* t) {
-        std::lock_guard<Lock> l(_lock);
-        _objects.emplace_back(Element{t, [](void* obj) { delete[] reinterpret_cast<T*>(obj); }});
-        return t;
-    }
 
     void clear() {
         std::lock_guard<Lock> l(_lock);
@@ -57,4 +51,4 @@ private:
 
 using NoLockFreeList = FreeList<DummyLock>;
 
-} // namespace stdpain
+} // namespace ms
